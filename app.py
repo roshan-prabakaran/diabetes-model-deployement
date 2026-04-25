@@ -1,59 +1,45 @@
-from flask import Flask, request, jsonify
+import streamlit as st
 import joblib
 import numpy as np
-
-# Initialize app
-app = Flask(__name__)
 
 # Load model and scaler
 model = joblib.load("logistic_regression_model.joblib")
 scaler = joblib.load("scaler.joblib")
 
-@app.route("/")
-def home():
-    return "Diabetes Prediction API is running!"
+# Title
+st.title("🩺 Diabetes Prediction App")
 
-@app.route("/predict", methods=["POST"])
-def predict():
+st.write("Enter patient details below:")
+
+# Input fields
+pregnancies = st.number_input("Pregnancies", min_value=0)
+glucose = st.number_input("Glucose Level", min_value=0)
+blood_pressure = st.number_input("Blood Pressure", min_value=0)
+skin_thickness = st.number_input("Skin Thickness", min_value=0)
+insulin = st.number_input("Insulin", min_value=0)
+bmi = st.number_input("BMI", min_value=0.0)
+dpf = st.number_input("Diabetes Pedigree Function", min_value=0.0)
+age = st.number_input("Age", min_value=0)
+
+# Predict button
+if st.button("Predict"):
     try:
-        data = request.get_json()
+        # Prepare input
+        features = np.array([[pregnancies, glucose, blood_pressure,
+                              skin_thickness, insulin, bmi, dpf, age]])
 
-        # Extract features (adjust order based on your dataset)
-        features = [
-            data["Pregnancies"],
-            data["Glucose"],
-            data["BloodPressure"],
-            data["SkinThickness"],
-            data["Insulin"],
-            data["BMI"],
-            data["DiabetesPedigreeFunction"],
-            data["Age"]
-        ]
-
-        # Convert to numpy array
-        features = np.array([features])
-
-        # Scale input
+        # Scale
         scaled_features = scaler.transform(features)
 
         # Predict
         prediction = model.predict(scaled_features)[0]
-
-        # Optional probability
         probability = model.predict_proba(scaled_features)[0][1]
 
-        return jsonify({
-            "prediction": int(prediction),
-            "probability": float(probability)
-        })
+        # Output
+        if prediction == 1:
+            st.error(f"⚠️ High Risk of Diabetes ({probability:.2f} probability)")
+        else:
+            st.success(f"✅ Low Risk of Diabetes ({probability:.2f} probability)")
 
     except Exception as e:
-        return jsonify({
-            "error": str(e)
-        })
-
-import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Render provides PORT
-    app.run(host="0.0.0.0", port=port)
+        st.error(f"Error: {e}")
