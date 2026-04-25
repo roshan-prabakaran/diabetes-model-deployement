@@ -3,3 +3,4 @@ numpy
 joblib
 scikit-learn
 gunicorn==22.0.0
+streamlit
